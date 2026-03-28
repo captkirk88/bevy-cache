@@ -34,6 +34,12 @@ Use this for caching assets that you want to persist across runs of your Bevy ap
 
 See [examples](/examples/).
 
+## Compatibility
+
+| bevy | bevy-cache |
+|------|------------|
+| 0.18 | 0.1        |
+
 ## Contributing
 
 Contributions are welcome! Please open issues or submit pull requests to contribute improvements, bug fixes, or new features.
