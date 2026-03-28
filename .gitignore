@@ -1,0 +1,14 @@
+**/target
+*.lock
+
+# testing
+/testing
+/test-data
+
+# folders starting with a .
+.github/**[^workflows]/**
+.cargo/**
+
+# Criterion data
+**/reports
+*.html
