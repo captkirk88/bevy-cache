@@ -36,8 +36,6 @@ See [examples](/examples/).
 
 ## Compatibility
 
-### bevy
-
 | bevy | bevy-cache |
 |------|------------|
 | 0.18 | 0.1        |
