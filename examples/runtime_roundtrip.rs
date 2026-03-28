@@ -14,7 +14,7 @@ use bevy::{
     image::ImagePlugin,
     prelude::*,
     reflect::TypePath,
-    window::{ExitCondition, WindowPlugin},
+    window::{WindowPlugin},
     winit::WinitPlugin,
 };
 use bevy_cache::prelude::*;

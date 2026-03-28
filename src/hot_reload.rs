@@ -38,15 +38,14 @@ use crate::manifest::CacheManifest;
 #[derive(Asset, TypePath, Clone)]
 pub struct CacheManifestAsset(pub CacheManifest);
 
-/// Resource that holds the [`Handle`] to the manifest asset and tracks
-/// whether the next save should be suppressed after a hot-reload to prevent
-/// a write → watch → reload loop.
+/// Internal resource that holds the [`Handle`] to the manifest asset and
+/// tracks whether the next save should be suppressed after a hot-reload to
+/// prevent a write → watch → reload loop.
+///
+/// Not part of the public API; users only need [`CacheManifest`].
 #[derive(Resource, Default)]
-pub struct ManifestHotReload {
-    /// Handle to the loaded manifest asset.
-    pub handle: Option<Handle<CacheManifestAsset>>,
-    /// Set to `true` by [`sync_manifest_from_asset`] so that the following
-    /// [`save_manifest_skip_reload`] call does not re-write the file.
+pub(crate) struct ManifestReloadState {
+    pub(crate) handle: Option<Handle<CacheManifestAsset>>,
     pub(crate) skip_next_save: bool,
 }
 
@@ -81,8 +80,8 @@ impl AssetLoader for CacheManifestLoader {
 ///
 /// Runs **after** `load_manifest` so the [`CacheManifest`] resource is
 /// already populated by the time this system runs.
-pub fn startup_watch_manifest(
-    mut state: ResMut<ManifestHotReload>,
+pub(crate) fn startup_watch_manifest(
+    mut state: ResMut<ManifestReloadState>,
     asset_server: Res<AssetServer>,
     config: Res<CacheConfig>,
 ) {
@@ -108,9 +107,9 @@ pub fn startup_watch_manifest(
 ///
 /// When the on-disk content actually differs, the resource is updated and the
 /// next save is suppressed to prevent a write → watch → reload loop.
-pub fn sync_manifest_from_asset(
+pub(crate) fn sync_manifest_from_asset(
     mut manifest: ResMut<CacheManifest>,
-    mut state: ResMut<ManifestHotReload>,
+    mut state: ResMut<ManifestReloadState>,
     assets: Res<Assets<CacheManifestAsset>>,
     mut events: MessageReader<AssetEvent<CacheManifestAsset>>,
 ) {
@@ -138,10 +137,10 @@ pub fn sync_manifest_from_asset(
 
 /// Drop-in replacement for `save_manifest_on_change` that skips one save
 /// cycle after a hot-reload to prevent a write → watch → reload loop.
-pub fn save_manifest_skip_reload(
+pub(crate) fn save_manifest_skip_reload(
     config: Res<CacheConfig>,
     manifest: Res<CacheManifest>,
-    mut state: ResMut<ManifestHotReload>,
+    mut state: ResMut<ManifestReloadState>,
 ) {
     if state.skip_next_save {
         state.skip_next_save = false;

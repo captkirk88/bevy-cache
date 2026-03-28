@@ -149,7 +149,7 @@ impl Plugin for BevyCachePlugin {
 
         #[cfg(feature = "hot_reload")]
         app
-            .init_resource::<hot_reload::ManifestHotReload>()
+            .init_resource::<hot_reload::ManifestReloadState>()
             .add_systems(
                 Startup,
                 hot_reload::startup_watch_manifest.after(systems::load_manifest),

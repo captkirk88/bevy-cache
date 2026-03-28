@@ -32,7 +32,7 @@ use bevy::{
     window::WindowPlugin,
     winit::WinitPlugin,
 };
-use bevy_cache::{hot_reload::ManifestHotReload, prelude::*};
+use bevy_cache::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use thiserror::Error;
@@ -205,10 +205,7 @@ fn watch_asset_changes(
 
 /// Logs whenever the manifest itself is reloaded from disk (e.g. an external
 /// tool adds or removes cache entries while the app is running).
-fn watch_manifest_changes(
-    state: Res<ManifestHotReload>,
-    manifest: Res<CacheManifest>,
-) {
+fn watch_manifest_changes(manifest: Res<CacheManifest>) {
     if manifest.is_changed() {
         let count = manifest.entries.len();
         info!(
@@ -217,6 +214,4 @@ fn watch_manifest_changes(
             if count == 1 { "y" } else { "ies" }
         );
     }
-    // Keep `state` in scope so the system has a read-dep on ManifestHotReload.
-    let _ = state;
 }
