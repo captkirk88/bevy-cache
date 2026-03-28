@@ -14,9 +14,7 @@ pub use error::CacheError;
 pub use manifest::{CacheEntry, CacheManifest};
 pub use save_queue::CacheQueue;
 
-#[cfg(not(feature = "hot_reload"))]
-use bevy::asset::io::file::FileAssetReader;
-use bevy::asset::io::AssetSourceBuilder;
+use bevy::asset::io::{AssetSource, AssetSourceBuilder};
 use bevy::prelude::*;
 
 pub mod prelude {
@@ -33,21 +31,10 @@ pub mod prelude {
 /// **Must be added before `DefaultPlugins`** so that the asset source is
 /// available when `AssetPlugin` initialises.
 ///
-/// # Example
-/// ```rust,ignore
-/// use bevy::prelude::*;
-/// use bevy_cache::BevyCachePlugin;
-///
-/// App::new()
-///     .add_plugins(BevyCachePlugin::new("my_game"))
-///     .add_plugins(DefaultPlugins)
-///     .run();
-/// ```
-///
-/// ## Hot-reloading
-///
-/// Enable the `hot_reload` Cargo feature and configure Bevy's file watcher to
-/// automatically reload cached assets and the manifest when files change:
+/// The plugin automatically registers the cache directory with Bevy's
+/// `AssetPlugin` using `platform_default`, so if you enable file watching in
+/// `AssetPlugin` the cache directory is watched alongside the normal assets
+/// folder — no extra configuration required:
 ///
 /// ```rust,ignore
 /// App::new()
@@ -59,8 +46,14 @@ pub mod prelude {
 ///     .run();
 /// ```
 ///
-/// With `hot_reload` enabled the manifest is saved as `manifest.cache_manifest`
-/// instead of `manifest.ron`.
+/// Without a `watch_for_changes_override` the cache source is still registered
+/// and accessible via `cache://`; watching is just disabled.
+///
+/// ## Hot-reloading the manifest
+///
+/// Enable the `hot_reload` Cargo feature to additionally watch the
+/// `manifest.cache_manifest` file itself and have [`CacheManifest`] re-synced
+/// automatically when it changes on disk.
 ///
 /// After adding the plugin, use [`CacheManifest`] to store and query cached
 /// assets, and [`CacheQueue`] to enqueue asset handles for deferred caching:
@@ -118,22 +111,29 @@ impl Plugin for BevyCachePlugin {
     fn build(&self, app: &mut App) {
         let cache_dir = self.config.cache_dir.clone();
 
-        // Under `hot_reload`, use `platform_default` so Bevy's file watcher
-        // is wired up for the cache source automatically.
-        #[cfg(feature = "hot_reload")]
-        {
-            let cache_dir_str = cache_dir.to_string_lossy().into_owned();
-            app.register_asset_source(
-                "cache",
-                AssetSourceBuilder::platform_default(&cache_dir_str, None),
-            );
+        // Ensure the cache directory exists on disk *before* registering the
+        // asset source. Bevy's `get_default_watcher` skips watcher creation
+        // (returning None) when the path does not exist at the time
+        // `AssetPlugin::build()` calls the watcher factory. Pre-creating the
+        // directory here guarantees the watcher is set up correctly.
+        if let Err(e) = self.config.ensure_cache_dir() {
+            warn!("bevy_cache: could not create cache directory {:?}: {e}", cache_dir);
         }
-        #[cfg(not(feature = "hot_reload"))]
+
+        // Register the cache source manually with a 1 s debounce (instead of
+        // `platform_default`'s 300 ms) so that editors that write files in two
+        // OS-level steps (truncate then write, or write-to-temp then rename)
+        // don't produce two reload events for a single logical save.
+        let s = cache_dir.to_string_lossy().into_owned();
         app.register_asset_source(
             "cache",
-            AssetSourceBuilder::new(
-                move || Box::new(FileAssetReader::new(cache_dir.clone())),
-            ),
+            AssetSourceBuilder::new(AssetSource::get_default_reader(s.clone()))
+                .with_writer(AssetSource::get_default_writer(s.clone()))
+                .with_watcher(AssetSource::get_default_watcher(
+                    s,
+                    std::time::Duration::from_millis(1000),
+                ))
+                .with_watch_warning(AssetSource::get_default_watch_warning()),
         );
 
         app.insert_resource(self.config.clone())

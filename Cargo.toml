@@ -61,7 +61,7 @@ lto = "thin"
 ## The manifest is also watched and `CacheManifest` is re-synced on disk
 ## modifications.  Requires Bevy file-watching to be turned on by the app:
 ## `AssetPlugin { watch_for_changes_override: Some(true), ..default() }`.
-hot_reload = []
+hot_reload = ["bevy/file_watcher"]
 
 [[example]]
 name = "runtime_roundtrip"

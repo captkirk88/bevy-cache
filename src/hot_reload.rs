@@ -128,7 +128,7 @@ pub fn sync_manifest_from_asset(
         }
         if let Some(asset) = assets.get(&handle) {
             if *manifest != asset.0 {
-                tracing::debug!("Cache manifest hot-reloaded from disk.");
+                tracing::info!("Cache manifest hot-reloaded from disk.");
                 state.skip_next_save = true;
                 *manifest = asset.0.clone();
             }

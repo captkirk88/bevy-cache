@@ -208,18 +208,14 @@ fn watch_asset_changes(
 fn watch_manifest_changes(
     state: Res<ManifestHotReload>,
     manifest: Res<CacheManifest>,
-    mut prev_count: Local<Option<usize>>,
 ) {
-    let count = manifest.entries.len();
-    if prev_count.is_none() || *prev_count != Some(count) {
-        if prev_count.is_some() {
-            info!(
-                "Manifest hot-reloaded: now has {} cache entr{}.",
-                count,
-                if count == 1 { "y" } else { "ies" }
-            );
-        }
-        *prev_count = Some(count);
+    if manifest.is_changed() {
+        let count = manifest.entries.len();
+        info!(
+            "Manifest changed: now has {} cache entr{}.",
+            count,
+            if count == 1 { "y" } else { "ies" }
+        );
     }
     // Keep `state` in scope so the system has a read-dep on ManifestHotReload.
     let _ = state;
