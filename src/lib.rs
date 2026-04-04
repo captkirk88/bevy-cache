@@ -3,6 +3,7 @@ mod config;
 mod error;
 mod manifest;
 mod save_queue;
+mod system_param;
 mod systems;
 
 #[cfg(feature = "hot_reload")]
@@ -13,13 +14,14 @@ pub use config::CacheConfig;
 pub use error::CacheError;
 pub use manifest::{CacheEntry, CacheManifest};
 pub use save_queue::CacheQueue;
+pub use system_param::Cache;
 
 use bevy::asset::io::{AssetSource, AssetSourceBuilder};
 use bevy::prelude::*;
 
 pub mod prelude {
     pub use crate::AssetServerCacheExt;
-    pub use crate::{BevyCachePlugin, CacheError, CacheEntry, CacheConfig, CacheManifest, CacheQueue};
+    pub use crate::{BevyCachePlugin, Cache, CacheError, CacheEntry, CacheConfig, CacheManifest, CacheQueue};
 }
 
 /// Plugin that registers the file cache system.
@@ -59,12 +61,9 @@ pub mod prelude {
 /// assets, and [`CacheQueue`] to enqueue asset handles for deferred caching:
 ///
 /// ```rust,ignore
-/// fn cache_screenshot(
-///     mut manifest: ResMut<CacheManifest>,
-///     config: Res<CacheConfig>,
-/// ) {
+/// fn cache_screenshot(mut cache: Cache) {
 ///     let png_data: Vec<u8> = render_my_screenshot();
-///     manifest.store(&config, "scene_01", "png", std::io::Cursor::new(png_data), None)
+///     cache.store("scene_01", "png", std::io::Cursor::new(png_data), None)
 ///         .expect("cache write failed");
 /// }
 ///
@@ -84,11 +83,8 @@ pub mod prelude {
 ///     }
 /// }
 ///
-/// fn load_cached(
-///     manifest: Res<CacheManifest>,
-///     asset_server: Res<AssetServer>,
-/// ) {
-///     if let Some(path) = manifest.asset_path("scene_01") {
+/// fn load_cached(mut cache: Cache, asset_server: Res<AssetServer>) {
+///     if let Some(path) = cache.asset_path("scene_01") {
 ///         // Bevy detects ".png" and uses ImageLoader automatically.
 ///         let handle: Handle<Image> = asset_server.load(path);
 ///     }

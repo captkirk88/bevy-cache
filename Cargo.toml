@@ -1,6 +1,6 @@
 [package]
 name = "bevy-cache"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 authors = ["Kirk <github.com/captkirk88>"]
 description = "A caching layer for Bevy assets with manifest persistence, expiry, and per-entry max age support"

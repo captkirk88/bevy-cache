@@ -100,11 +100,10 @@ fn main() -> AppExit {
 
 fn cache_or_load_assets(
     mut commands: Commands,
-    mut manifest: ResMut<CacheManifest>,
-    config: Res<CacheConfig>,
+    mut cache: Cache,
     asset_server: Res<AssetServer>,
 ) {
-    if manifest.is_cached(config.as_ref(), GENERATED_KEY) {
+    if cache.is_cached(GENERATED_KEY) {
         info!("Dynamic asset cache hit: loading cached greeting asset");
     } else {
         let runtime_asset = GreetingAsset {
@@ -115,9 +114,8 @@ fn cache_or_load_assets(
         let bytes = ron::ser::to_string_pretty(&runtime_asset, ron::ser::PrettyConfig::default())
             .expect("failed to serialize runtime-generated asset");
 
-        manifest
+        cache
             .store(
-                config.as_ref(),
                 GENERATED_KEY,
                 "greet",
                 std::io::Cursor::new(bytes),
@@ -128,13 +126,13 @@ fn cache_or_load_assets(
         info!("Dynamic asset cache miss: generated and cached greeting asset");
     }
 
-    if manifest.is_cached(config.as_ref(), IMAGE_KEY) {
+    if cache.is_cached(IMAGE_KEY) {
         info!("Image asset cache hit: loading cached img.png copy");
     } else {
         let image_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("img.png");
 
-        manifest
-            .store(config.as_ref(), IMAGE_KEY, "png", std::fs::File::open(&image_path).expect("failed to open img.png"), None)
+        cache
+            .store(IMAGE_KEY, "png", std::fs::File::open(&image_path).expect("failed to open img.png"), None)
             .expect("failed to cache img.png");
 
         info!(
@@ -143,11 +141,11 @@ fn cache_or_load_assets(
         );
     }
 
-    let greeting = asset_server
-        .load_cached::<GreetingAsset>(&manifest, config.as_ref(), GENERATED_KEY)
+    let greeting = cache
+        .load_cached::<GreetingAsset>(&asset_server, GENERATED_KEY)
         .expect("failed to create cached greeting handle");
-    let image = asset_server
-        .load_cached::<Image>(&manifest, config.as_ref(), IMAGE_KEY)
+    let image = cache
+        .load_cached::<Image>(&asset_server, IMAGE_KEY)
         .expect("failed to create cached image handle");
 
     commands.insert_resource(CachedAssets { greeting, image });

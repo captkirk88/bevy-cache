@@ -30,6 +30,30 @@ Add the `BevyCachePlugin` to your Bevy app, passing in a unique application name
 
 Use this for caching assets that you want to persist across runs of your Bevy app, optionally with expiration, and to be able to load them via `cache://` paths in the Bevy asset system.
 
+Systems can use the `Cache` system param to work with both `CacheManifest` and `CacheConfig` through a single parameter:
+
+```rust
+use bevy::prelude::*;
+use bevy_cache::prelude::*;
+
+fn cache_image(mut cache: Cache, asset_server: Res<AssetServer>) {
+  if !cache.is_cached("portraits/player") {
+    cache
+      .store(
+        "portraits/player",
+        "png",
+        std::io::Cursor::new(vec![1, 2, 3]),
+        None,
+      )
+      .expect("cache write failed");
+  }
+
+  let _image: Handle<Image> = cache
+    .load_cached(&asset_server, "portraits/player")
+    .expect("cache load failed");
+}
+```
+
 ## Examples
 
 See [examples](/examples/).
