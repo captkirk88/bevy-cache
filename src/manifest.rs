@@ -91,6 +91,9 @@ impl CacheManifest {
 
         let file_name = format!("{key}.{extension}");
         let fs_path = config.file_path(&file_name);
+        if let Some(parent) = fs_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
         let file = std::fs::File::create(&fs_path)?;
         let mut writer = BufWriter::new(file);
         let size_bytes = std::io::copy(&mut reader, &mut writer)?;

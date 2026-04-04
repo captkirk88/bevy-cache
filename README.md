@@ -38,7 +38,7 @@ See [examples](/examples/).
 
 | bevy | bevy-cache |
 |------|------------|
-| 0.18 | 0.1        |
+| 0.18 | 0.1 - 0.2  |
 
 ## Contributing
 

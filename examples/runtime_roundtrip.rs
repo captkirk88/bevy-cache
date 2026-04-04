@@ -24,7 +24,7 @@ use std::time::Duration;
 use thiserror::Error;
 
 const APP_NAME: &str = "bevy_cache_runtime_roundtrip";
-const GENERATED_KEY: &str = "runtime_greeting";
+const GENERATED_KEY: &str = "greetings/runtime_greeting";
 const IMAGE_KEY: &str = "cached_logo";
 
 #[derive(Asset, TypePath, Debug, Clone, Serialize, Deserialize)]

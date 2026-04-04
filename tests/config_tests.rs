@@ -71,6 +71,14 @@ fn validate_key_accepts_simple_names() {
 }
 
 #[test]
+fn validate_key_accepts_forward_slash_subpaths() {
+    let config = CacheConfig::new("test_app");
+    config
+        .validate_key("icons/ui/scene_01")
+        .expect("forward-slash subpaths should be valid");
+}
+
+#[test]
 fn validate_key_rejects_empty() {
     let config = CacheConfig::new("test_app");
     assert!(matches!(
@@ -80,14 +88,27 @@ fn validate_key_rejects_empty() {
 }
 
 #[test]
-fn validate_key_rejects_path_separators() {
+fn validate_key_rejects_backslashes() {
     let config = CacheConfig::new("test_app");
     assert!(matches!(
-        config.validate_key("a/b"),
+        config.validate_key("a\\b"),
+        Err(CacheError::InvalidKey(_))
+    ));
+}
+
+#[test]
+fn validate_key_rejects_empty_path_segments() {
+    let config = CacheConfig::new("test_app");
+    assert!(matches!(
+        config.validate_key("a//b"),
         Err(CacheError::InvalidKey(_))
     ));
     assert!(matches!(
-        config.validate_key("a\\b"),
+        config.validate_key("/a"),
+        Err(CacheError::InvalidKey(_))
+    ));
+    assert!(matches!(
+        config.validate_key("a/"),
         Err(CacheError::InvalidKey(_))
     ));
 }
@@ -100,7 +121,7 @@ fn validate_key_rejects_dot_dot() {
         Err(CacheError::InvalidKey(_))
     ));
     assert!(matches!(
-        config.validate_key("a..b"),
+        config.validate_key("a/../b"),
         Err(CacheError::InvalidKey(_))
     ));
 }

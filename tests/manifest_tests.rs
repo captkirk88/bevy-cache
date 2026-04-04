@@ -40,6 +40,36 @@ fn store_and_retrieve_entry() {
 }
 
 #[test]
+fn store_supports_subpath_keys() {
+    let dir = tempfile::tempdir().expect("failed to create tempdir");
+    let config = temp_config(&dir);
+    let mut manifest = CacheManifest::default();
+
+    manifest
+        .store(
+            &config,
+            "portraits/npcs/rat_king",
+            "png",
+            std::io::Cursor::new(b"fake png bytes"),
+            None,
+        )
+        .expect("store should succeed for nested keys");
+
+    assert!(manifest.contains("portraits/npcs/rat_king"));
+    let entry = manifest
+        .get("portraits/npcs/rat_king")
+        .expect("entry should exist");
+    assert_eq!(entry.file_name, "portraits/npcs/rat_king.png");
+    assert_eq!(
+        manifest.asset_path("portraits/npcs/rat_king"),
+        Some("cache://portraits/npcs/rat_king.png".to_owned())
+    );
+
+    let fs_path = config.file_path("portraits/npcs/rat_king.png");
+    assert!(fs_path.exists(), "nested cached file should exist on disk");
+}
+
+#[test]
 fn store_overwrites_existing_entry() {
     let dir = tempfile::tempdir().expect("failed to create tempdir");
     let config = temp_config(&dir);
@@ -405,6 +435,31 @@ fn load_cached_returns_handle_when_file_exists() {
 
     let asset_server = app.world().resource::<bevy::prelude::AssetServer>();
     let result = manifest.load_cached::<bevy::prelude::Image>(&config, "tex", asset_server);
+    assert!(result.is_ok(), "expected Ok handle, got {result:?}");
+}
+
+#[test]
+fn load_cached_returns_handle_for_subpath_key() {
+    let dir = tempfile::tempdir().expect("failed to create tempdir");
+    let config = temp_config(&dir);
+    let mut manifest = CacheManifest::default();
+
+    manifest
+        .store(
+            &config,
+            "nested/textures/tex",
+            "png",
+            std::io::Cursor::new(b"\x89PNG fake"),
+            None,
+        )
+        .expect("store");
+
+    let mut app = helpers::test_app(dir.path());
+    app.update();
+
+    let asset_server = app.world().resource::<bevy::prelude::AssetServer>();
+    let result =
+        manifest.load_cached::<bevy::prelude::Image>(&config, "nested/textures/tex", asset_server);
     assert!(result.is_ok(), "expected Ok handle, got {result:?}");
 }
 

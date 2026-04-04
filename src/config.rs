@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::time::Duration;
 
 /// Configuration for the file cache system.
@@ -60,22 +60,34 @@ impl CacheConfig {
         std::fs::create_dir_all(&self.cache_dir)
     }
 
-    /// Validate that a cache key is safe (no path separators, not empty, no
-    /// null bytes, and does not collide with the manifest file).
+    /// Validate that a cache key is a safe relative path within the cache
+    /// root. Forward-slash subpaths are allowed, but traversal, absolute
+    /// paths, backslashes, empty segments, and manifest filename collisions
+    /// are rejected.
     pub fn validate_key(&self, key: &str) -> Result<(), crate::CacheError> {
         if key.is_empty()
-            || key.contains('/')
-            || key.contains('\\')
-            || key.contains("..")
             || key.contains('\0')
+            || key.contains('\\')
+            || key.starts_with('/')
+            || key.ends_with('/')
+            || key.split('/').any(str::is_empty)
             || key == self.manifest_file_name()
         {
             return Err(crate::CacheError::InvalidKey(key.to_owned()));
         }
-        let joined = Path::new(key);
-        if joined.components().count() != 1 {
-            return Err(crate::CacheError::InvalidKey(key.to_owned()));
+
+        for component in Path::new(key).components() {
+            match component {
+                Component::Normal(_) => {}
+                Component::CurDir
+                | Component::ParentDir
+                | Component::RootDir
+                | Component::Prefix(_) => {
+                    return Err(crate::CacheError::InvalidKey(key.to_owned()));
+                }
+            }
         }
+
         Ok(())
     }
 }

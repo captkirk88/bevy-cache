@@ -15,6 +15,6 @@ pub enum CacheError {
     #[error("Cache entry not found: {0}")]
     NotFound(String),
 
-    #[error("Invalid cache key (must not contain path separators or be empty): {0}")]
+    #[error("Invalid cache key (must be a non-empty relative path using '/' separators): {0}")]
     InvalidKey(String),
 }
