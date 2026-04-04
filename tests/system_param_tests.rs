@@ -78,3 +78,52 @@ fn cache_system_param_wraps_manifest_and_config() {
     );
     assert_eq!(probe.manifest_len, 1);
 }
+
+#[cfg(feature = "hot_reload")]
+#[derive(Resource)]
+struct TestImageHandle(Handle<Image>);
+
+#[cfg(feature = "hot_reload")]
+#[derive(Resource)]
+struct HotReloadProbe(bool);
+
+#[cfg(feature = "hot_reload")]
+fn exercise_hot_reload_helper(
+    mut commands: Commands,
+    cache: Cache,
+    mut events: MessageReader<AssetEvent<Image>>,
+    assets: Res<Assets<Image>>,
+    handle: Res<TestImageHandle>,
+) {
+    let found = cache
+        .get_if_modified(&handle.0, assets.as_ref(), &mut events)
+        .is_some();
+    commands.insert_resource(HotReloadProbe(found));
+}
+
+#[cfg(feature = "hot_reload")]
+#[test]
+fn cache_hot_reload_helper_filters_modified_events() {
+    let dir = tempfile::tempdir().expect("failed to create tempdir");
+    let (mut app, _) = helpers::test_app_with_manifest(dir.path());
+
+    let handle = {
+        let mut assets = app.world_mut().resource_mut::<Assets<Image>>();
+        assets.add(Image::default())
+    };
+
+    app.insert_resource(TestImageHandle(handle.clone()));
+    app.add_systems(Update, exercise_hot_reload_helper);
+
+    app.world_mut()
+        .resource_mut::<Messages<AssetEvent<Image>>>()
+        .write(AssetEvent::Modified { id: handle.id() });
+
+    app.update();
+
+    let probe = app
+        .world()
+        .get_resource::<HotReloadProbe>()
+        .expect("HotReloadProbe should be inserted by the test system");
+    assert!(probe.0, "modified event should resolve to the matching asset");
+}

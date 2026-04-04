@@ -140,11 +140,10 @@ fn main() -> AppExit {
 /// (preserving any edits the user made between runs).
 fn seed_and_load_cache(
     mut commands: Commands,
-    mut manifest: ResMut<CacheManifest>,
-    config: Res<CacheConfig>,
+    mut cache: Cache,
     asset_server: Res<AssetServer>,
 ) {
-    if manifest.is_cached(config.as_ref(), SCOREBOARD_KEY) {
+    if cache.is_cached(SCOREBOARD_KEY) {
         info!("Cache hit — loading existing scoreboard (your edits are preserved).");
     } else {
         let board = ScoreboardAsset {
@@ -156,9 +155,8 @@ fn seed_and_load_cache(
         let serialized = ron::ser::to_string_pretty(&board, ron::ser::PrettyConfig::default())
             .expect("failed to serialise scoreboard");
 
-        manifest
+        cache
             .store(
-                config.as_ref(),
                 SCOREBOARD_KEY,
                 "scoreboard",
                 std::io::Cursor::new(serialized),
@@ -169,13 +167,13 @@ fn seed_and_load_cache(
         info!("Cache miss — created initial scoreboard.");
     }
 
-    let fs_path = config.file_path("scoreboard.scoreboard");
+    let fs_path = cache.config().file_path("scoreboard.scoreboard");
     info!("Cached file path: {}", fs_path.display());
     info!("Open the file above, edit it, and save to see hot-reload in action.");
     info!("Press Ctrl+C to exit.");
 
-    let handle = asset_server
-        .load_cached::<ScoreboardAsset>(&manifest, config.as_ref(), SCOREBOARD_KEY)
+    let handle = cache
+        .load_cached::<ScoreboardAsset>(&asset_server, SCOREBOARD_KEY)
         .expect("failed to load cached scoreboard");
 
     commands.insert_resource(CachedHandles { scoreboard: handle });
@@ -183,23 +181,18 @@ fn seed_and_load_cache(
 
 /// Logs the updated content whenever the scoreboard file is modified on disk.
 fn watch_asset_changes(
+    cache: Cache,
     mut events: MessageReader<AssetEvent<ScoreboardAsset>>,
     assets: Res<Assets<ScoreboardAsset>>,
     handles: Option<Res<CachedHandles>>,
 ) {
     let Some(handles) = handles else { return };
 
-    for event in events.read() {
-        if let AssetEvent::Modified { id } = event {
-            if *id == handles.scoreboard.id() {
-                if let Some(board) = assets.get(&handles.scoreboard) {
-                    info!("--- Scoreboard hot-reloaded! ---");
-                    info!("  top_score:   {}", board.top_score);
-                    info!("  player_name: {}", board.player_name);
-                    info!("  notes:       {}", board.notes);
-                }
-            }
-        }
+    if let Some(board) = cache.get_if_modified(&handles.scoreboard, assets.as_ref(), &mut events) {
+        info!("--- Scoreboard hot-reloaded! ---");
+        info!("  top_score:   {}", board.top_score);
+        info!("  player_name: {}", board.player_name);
+        info!("  notes:       {}", board.notes);
     }
 }
 

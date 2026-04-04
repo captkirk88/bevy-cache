@@ -111,4 +111,26 @@ impl<'w> Cache<'w> {
     ) -> Result<Handle<A>, CacheError> {
         self.manifest.load_cached(self.config.as_ref(), key, asset_server)
     }
+
+    /// Returns the modified asset for `handle` when a matching
+    /// [`AssetEvent::Modified`] is present in `events`.
+    ///
+    /// This is only available with the `hot_reload` feature enabled.
+    #[cfg(feature = "hot_reload")]
+    pub fn get_if_modified<'a, A: Asset>(
+        &self,
+        handle: &Handle<A>,
+        assets: &'a Assets<A>,
+        messages: &mut MessageReader<AssetEvent<A>>,
+    ) -> Option<&'a A> {
+        for event in messages.read() {
+            if let AssetEvent::Modified { id } = event {
+                if *id == handle.id() {
+                    return assets.get(handle);
+                }
+            }
+        }
+
+        None
+    }
 }
