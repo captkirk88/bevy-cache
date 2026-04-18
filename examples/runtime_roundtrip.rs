@@ -84,6 +84,7 @@ fn main() -> AppExit {
             .set(ImagePlugin::default())
             .set(WindowPlugin {
                 primary_window: None,
+                exit_condition: bevy::window::ExitCondition::DontExit,
                 ..default()
             })
             .disable::<WinitPlugin>(),
@@ -149,6 +150,8 @@ fn cache_or_load_assets(
         .expect("failed to create cached image handle");
 
     commands.insert_resource(CachedAssets { greeting, image });
+
+    info!("Cache path: {}", cache.cache_dir().display());
 }
 
 fn wait_for_cached_assets(

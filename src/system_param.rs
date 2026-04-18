@@ -1,6 +1,6 @@
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
-use std::io::Read;
+use std::{io::Read, path::Path};
 use std::time::Duration;
 
 use crate::{CacheConfig, CacheEntry, CacheError, CacheManifest};
@@ -39,6 +39,11 @@ pub struct Cache<'w> {
 }
 
 impl<'w> Cache<'w> {
+
+    pub fn cache_dir(&self) -> &Path {
+        self.config.cache_dir.as_path()
+    }
+    
     /// Returns the cache configuration resource.
     pub fn config(&self) -> &CacheConfig {
         self.config.as_ref()
@@ -121,7 +126,7 @@ impl<'w> Cache<'w> {
         &self,
         handle: &Handle<A>,
         assets: &'a Assets<A>,
-        messages: &mut MessageReader<AssetEvent<A>>,
+        messages: &'a mut MessageReader<AssetEvent<A>>,
     ) -> Option<&'a A> {
         for event in messages.read() {
             if let AssetEvent::Modified { id } = event {
