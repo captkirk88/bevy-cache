@@ -1,30 +1,55 @@
 [package]
 name = "bevy-cache"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2024"
-authors = ["Kirk <github.com/captkirk88>"]
 description = "A caching layer for Bevy assets with manifest persistence, expiry, and per-entry max age support"
-license = "MIT"
 repository = "https://github.com/captkirk88/bevy-cache"
+license = "MIT"
+keywords = ["asset", "bevy", "cache"]
 categories = ["game-development"]
-keywords = ["bevy", "cache", "asset"]
-exclude = ["examples/*", "tests/*", "*.png"]
+exclude = ["*.png", "examples/*", "tests/*"]
+
+[[example]]
+name = "runtime_roundtrip"
+path = "examples/runtime_roundtrip.rs"
+
+[[example]]
+name = "hot_reload_demo"
+path = "examples/hot_reload_demo.rs"
+required-features = ["hot_reload"]
 
 [dependencies]
-bevy = "0.18"
-serde = { version = "1", features = ["derive"] }
-ron = "0.12"
-thiserror = "2"
-sysdirs = "0.9"
+bevy = "0.19"
 # Set max log levels. This helps avoid unwanted low-severity log spam, which can affect performance.
-log = { version = "0.4", features = [
+log = {
+  version = "0.4",
+  features = [
     "max_level_debug",
     "release_max_level_warn",
-] }
-tracing = { version = "0.1", features = [
+  ]
+}
+ron = "0.12"
+serde = { version = "1", features = ["derive"] }
+sysdirs = "0.9"
+thiserror = "2"
+tracing = {
+  version = "0.1",
+  features = [
     "max_level_debug",
     "release_max_level_warn",
-] }
+  ]
+}
+
+[dev-dependencies]
+tempfile = "3"
+
+[features]
+## When enabled, the `cache://` asset source is registered with a filesystem
+## watcher so cached assets reload automatically when their files change.
+## The manifest is also watched and `CacheManifest` is re-synced on disk
+## modifications.  Requires Bevy file-watching to be turned on by the app:
+## `AssetPlugin { watch_for_changes_override: Some(true), ..default() }`.
+hot_reload = ["bevy/file_watcher"]
 
 # Idiomatic Bevy code often triggers these lints, and the CI workflow treats them as errors.
 # In some cases they may still signal poor code quality however, so consider commenting out these lines.
@@ -48,29 +73,5 @@ opt-level = 3
 debug-assertions = false
 
 [profile.release]
-# Compile the entire crate as one unit.
-# Slows compile times, marginal improvements.
-codegen-units = 1
-# Do a second optimization pass over the entire program, including dependencies.
-# Slows compile times, marginal improvements.
+opt-level = 3
 lto = "thin"
-
-[features]
-## When enabled, the `cache://` asset source is registered with a filesystem
-## watcher so cached assets reload automatically when their files change.
-## The manifest is also watched and `CacheManifest` is re-synced on disk
-## modifications.  Requires Bevy file-watching to be turned on by the app:
-## `AssetPlugin { watch_for_changes_override: Some(true), ..default() }`.
-hot_reload = ["bevy/file_watcher"]
-
-[[example]]
-name = "runtime_roundtrip"
-path = "examples/runtime_roundtrip.rs"
-
-[[example]]
-name = "hot_reload_demo"
-path = "examples/hot_reload_demo.rs"
-required-features = ["hot_reload"]
-
-[dev-dependencies]
-tempfile = "3"

@@ -1,7 +1,7 @@
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
-use std::{io::Read, path::Path};
 use std::time::Duration;
+use std::{io::Read, path::Path};
 
 use crate::{CacheConfig, CacheEntry, CacheError, CacheManifest};
 
@@ -39,11 +39,10 @@ pub struct Cache<'w> {
 }
 
 impl<'w> Cache<'w> {
-
     pub fn cache_dir(&self) -> &Path {
         self.config.cache_dir.as_path()
     }
-    
+
     /// Returns the cache configuration resource.
     pub fn config(&self) -> &CacheConfig {
         self.config.as_ref()
@@ -67,7 +66,8 @@ impl<'w> Cache<'w> {
         reader: R,
         max_age: Option<Duration>,
     ) -> Result<(), CacheError> {
-        self.manifest.store(self.config.as_ref(), key, extension, reader, max_age)
+        self.manifest
+            .store(self.config.as_ref(), key, extension, reader, max_age)
     }
 
     /// Remove a cache entry and its backing file from disk.
@@ -114,7 +114,8 @@ impl<'w> Cache<'w> {
         asset_server: &AssetServer,
         key: &str,
     ) -> Result<Handle<A>, CacheError> {
-        self.manifest.load_cached(self.config.as_ref(), key, asset_server)
+        self.manifest
+            .load_cached(self.config.as_ref(), key, asset_server)
     }
 
     /// Returns the modified asset for `handle` when a matching

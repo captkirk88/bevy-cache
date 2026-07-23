@@ -9,7 +9,7 @@ pub fn load_manifest(mut commands: Commands, config: Res<CacheConfig>) {
     let manifest = match CacheManifest::load_from_disk(&config) {
         Ok(m) => m,
         Err(e) => {
-            tracing::warn!("Failed to load cache manifest, starting fresh: {e}");
+            warn!("Failed to load cache manifest, starting fresh: {e}");
             CacheManifest::default()
         }
     };
@@ -31,11 +31,11 @@ pub fn cleanup_on_exit(
     let evicted = manifest.enforce_max_entries(&config);
 
     if expired + evicted > 0 {
-        tracing::debug!("Exit cache cleanup: removed {expired} expired, {evicted} over limit");
+        debug!("Exit cache cleanup: removed {expired} expired, {evicted} over limit");
     }
 
     if let Err(e) = manifest.save_to_disk(&config) {
-        tracing::error!("Failed to save cache manifest on exit: {e}");
+        error!("Failed to save cache manifest on exit: {e}");
     }
 }
 
@@ -48,6 +48,6 @@ pub fn save_manifest_on_change(config: Res<CacheConfig>, manifest: Res<CacheMani
     }
 
     if let Err(e) = manifest.save_to_disk(config.as_ref()) {
-        tracing::error!("Failed to save cache manifest: {e}");
+        error!("Failed to save cache manifest: {e}");
     }
 }
